@@ -1,0 +1,1211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Practicum Smart ID - Student Attendance Portal</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js for Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- SheetJS for Excel Export -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- html5-qrcode for Camera Scanning -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        spu: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            200: '#a7f3d0',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                            800: '#065f46',
+                            900: '#064e3b',
+                            dark: '#022c22',
+                            gold: '#d97706',
+                            goldLight: '#fef3c7'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #a7f3d0;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #059669;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 0.4; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+        .pulse-animation {
+            animation: pulse-ring 2s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-emerald-950/5 text-slate-800 font-sans antialiased min-h-screen flex flex-col md:flex-row">
+
+    <!-- Mobile Top Navigation Header -->
+    <div class="md:hidden bg-spu-900 text-white flex items-center justify-between p-4 sticky top-0 z-50 shadow-md border-b border-spu-700">
+        <div class="flex items-center space-x-3">
+            <div class="bg-spu-600 p-2 rounded-lg text-spu-goldLight font-bold text-xl flex items-center justify-center w-10 h-10 shadow">
+                <i class="fa-solid fa-graduation-cap"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg leading-tight tracking-wide text-white">Practicum Smart ID</h1>
+                <p class="text-xs text-spu-200">St. Paul University System</p>
+            </div>
+        </div>
+        <button id="mobileMenuBtn" class="text-spu-200 hover:text-white text-2xl focus:outline-none p-1">
+            <i class="fa-solid fa-bars"></i>
+        </button>
+    </div>
+
+    <!-- Sidebar Navigation -->
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-72 bg-spu-dark text-spu-100 flex flex-col justify-between transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out shadow-xl md:static md:shadow-none border-r border-spu-900">
+        <div>
+            <!-- Sidebar Header -->
+            <div class="p-6 border-b border-spu-800 hidden md:block bg-spu-900/60">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-gradient-to-br from-spu-600 to-spu-800 p-2.5 rounded-xl text-spu-goldLight font-bold text-2xl flex items-center justify-center w-12 h-12 shadow-lg border border-spu-500/30">
+                        <i class="fa-solid fa-graduation-cap"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-extrabold text-xl text-white tracking-wide">PRACTICUM</h1>
+                        <p class="text-[11px] text-spu-gold font-bold tracking-wider uppercase">Student</p>
+                        <p class="text-[10px] text-spu-200 uppercase tracking-widest mt-0.5">Smart ID System</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Menu Section -->
+            <div class="px-4 py-6">
+                <p class="text-[11px] font-bold text-spu-200/60 uppercase tracking-wider px-3 mb-3">Main Menu</p>
+                <nav class="space-y-1">
+                    <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 bg-spu-600 text-white shadow-lg shadow-spu-900/40">
+                        <i class="fa-solid fa-table-cells-large w-5 text-center"></i>
+                        <span>Dashboard</span>
+                    </button>
+                    <button onclick="switchTab('scanner')" id="nav-scanner" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 hover:bg-spu-900 hover:text-white text-spu-200/80">
+                        <i class="fa-solid fa-qrcode w-5 text-center"></i>
+                        <span>Attendance Scanner</span>
+                    </button>
+                    <button onclick="switchTab('logs')" id="nav-logs" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 hover:bg-spu-900 hover:text-white text-spu-200/80">
+                        <i class="fa-solid fa-book-bookmark w-5 text-center"></i>
+                        <span>Attendance Log Book</span>
+                    </button>
+                    <button onclick="switchTab('performance')" id="nav-performance" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 hover:bg-spu-900 hover:text-white text-spu-200/80">
+                        <i class="fa-solid fa-chart-line w-5 text-center"></i>
+                        <span>Student Performance</span>
+                    </button>
+                </nav>
+
+                <!-- Administration Section -->
+                <p class="text-[11px] font-bold text-spu-200/60 uppercase tracking-wider px-3 mt-8 mb-3">Administration</p>
+                <nav class="space-y-1">
+                    <button onclick="switchTab('registration')" id="nav-registration" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 hover:bg-spu-900 hover:text-white text-spu-200/80">
+                        <i class="fa-solid fa-user-plus w-5 text-center"></i>
+                        <span>Student Registration</span>
+                    </button>
+                    <button onclick="switchTab('users')" id="nav-users" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 hover:bg-spu-900 hover:text-white text-spu-200/80">
+                        <i class="fa-solid fa-users-gear w-5 text-center"></i>
+                        <span>User Management</span>
+                    </button>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Footer Profile Info -->
+        <div class="p-4 border-t border-spu-900 bg-spu-900/80">
+            <div class="flex items-center space-x-3 p-2 rounded-lg">
+                <div class="bg-spu-600/30 text-spu-200 p-2.5 rounded-lg font-bold text-lg border border-spu-500/20">
+                    <i class="fa-solid fa-user-shield"></i>
+                </div>
+                <div class="flex-1 overflow-hidden">
+                    <h4 class="text-sm font-semibold text-white truncate">admin</h4>
+                    <p class="text-xs text-spu-200/70 truncate">System Admin</p>
+                </div>
+                <button onclick="resetSystemData()" title="Reset All Data" class="text-spu-200 hover:text-rose-400 p-1.5 transition-colors">
+                    <i class="fa-solid fa-power-off"></i>
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Overlay for mobile sidebar -->
+    <div id="sidebarOverlay" class="fixed inset-0 bg-spu-dark/60 backdrop-blur-sm z-30 hidden md:hidden"></div>
+
+    <!-- Main Content Body -->
+    <main class="flex-1 flex flex-col min-w-0 overflow-y-auto custom-scrollbar">
+
+        <!-- Top Status Bar -->
+        <header class="bg-white border-b border-spu-100 px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sticky top-0 z-20 shadow-sm">
+            <div>
+                <h2 id="pageTitle" class="text-2xl font-bold text-spu-900">Dashboard Overview</h2>
+                <p id="pageSubTitle" class="text-sm text-slate-500">Welcome to Practicum Portal.</p>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="bg-spu-50 border border-spu-200/60 px-4 py-2 rounded-xl text-right">
+                    <div id="liveClock" class="text-lg font-extrabold text-spu-800 font-mono leading-none">00:00:00 AM</div>
+                    <div id="liveDate" class="text-xs text-spu-700 font-medium mt-1">Wednesday, July 15, 2026</div>
+                </div>
+            </div>
+        </header>
+
+        <!-- View Content Containers -->
+        <div class="p-4 sm:p-6 lg:p-8 flex-1 max-w-7xl w-full mx-auto space-y-6">
+
+            <!-- 1. DASHBOARD TAB -->
+            <section id="tab-dashboard" class="tab-content space-y-6">
+                <!-- Stats Overview -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-2xl border border-spu-100 shadow-sm flex items-center space-x-5 hover:shadow-md transition-shadow">
+                        <div class="w-14 h-14 rounded-2xl bg-spu-50 text-spu-700 flex items-center justify-center text-2xl border border-spu-200/50">
+                            <i class="fa-solid fa-users"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Students Registered</p>
+                            <h3 id="statTotalStudents" class="text-3xl font-extrabold text-spu-900 mt-1">0</h3>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-2xl border border-spu-100 shadow-sm flex items-center space-x-5 hover:shadow-md transition-shadow">
+                        <div class="w-14 h-14 rounded-2xl bg-spu-100 text-spu-800 flex items-center justify-center text-2xl border border-spu-200">
+                            <i class="fa-solid fa-qrcode"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Scanned Attendance Today</p>
+                            <h3 id="statScannedToday" class="text-3xl font-extrabold text-spu-900 mt-1">0</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Action Banner -->
+                <div class="bg-gradient-to-r from-spu-800 via-spu-700 to-spu-900 rounded-2xl p-6 text-white shadow-lg shadow-spu-900/20 border border-spu-600/30 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div class="space-y-1 text-center sm:text-left">
+                        <h3 class="text-xl font-bold flex items-center justify-center sm:justify-start gap-2 text-white">
+                            <i class="fa-solid fa-rocket text-spu-gold"></i> Launch Attendance Terminal
+                        </h3>
+                        <p class="text-spu-100 text-sm">Start scanning student RFID tags or phone NFC for instant time tracking.</p>
+                    </div>
+                    <button onclick="switchTab('scanner')" class="px-6 py-3 bg-spu-gold hover:bg-amber-600 text-white font-bold rounded-xl shadow-md transition-colors whitespace-nowrap">
+                        Open Scanner Terminal
+                    </button>
+                </div>
+
+                <!-- Dashboard Charts & Recent Activity -->
+                <div class="bg-white rounded-2xl border border-spu-100 p-6 shadow-sm">
+                    <h3 class="text-lg font-bold text-spu-900 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-column text-spu-600"></i> Attendance Trends (Recent Activity)
+                    </h3>
+                    <div class="h-64">
+                        <canvas id="dashboardChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- 2. ATTENDANCE SCANNER TAB -->
+            <section id="tab-scanner" class="tab-content space-y-6 hidden">
+                
+                <!-- Main NFC / Scanner Header Controls -->
+                <div class="bg-white rounded-2xl border border-spu-100 p-6 shadow-sm space-y-4">
+                    
+                    <!-- NFC Phone Action Card -->
+                    <div class="bg-gradient-to-r from-spu-700 to-spu-900 rounded-xl p-4 text-white flex flex-col sm:flex-row items-center justify-between gap-4 shadow-md border border-spu-600/30">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center text-2xl text-spu-gold">
+                                <i class="fa-solid fa-mobile-screen-button"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-base">Mobile NFC & Hardware Reader Ready</h4>
+                                <p class="text-xs text-spu-100">Laptop: Plug in USB RFID scanner | Mobile: Tap button below to activate phone NFC reader.</p>
+                            </div>
+                        </div>
+                        <button onclick="initNFCScan()" id="btnNFCScan" class="w-full sm:w-auto px-5 py-2.5 bg-spu-gold hover:bg-amber-600 text-white font-bold rounded-xl shadow-sm transition-colors flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-wifi text-lg"></i>
+                            <span>Tap to Scan with Phone NFC</span>
+                        </button>
+                    </div>
+
+                    <!-- Scan Mode Status Bar -->
+                    <div id="scannerStatusBox" class="bg-spu-700 text-white rounded-xl p-4 flex items-center justify-between transition-colors shadow-sm">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-xl pulse-animation">
+                                <i class="fa-solid fa-wifi"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-lg leading-tight" id="scannerStatusTitle">Ready to Scan</h4>
+                                <p class="text-xs text-spu-100" id="scannerStatusDesc">Listening for RFID / NFC ID card or Keyboard Scanner input...</p>
+                            </div>
+                        </div>
+                        <span class="bg-white/20 px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase border border-white/30" id="scannerBadge">
+                            <i class="fa-solid fa-circle-check mr-1"></i> SYSTEM READY
+                        </span>
+                    </div>
+
+                    <!-- Camera Scanner Accordion / Toggle -->
+                    <div class="pt-2">
+                        <button onclick="toggleCameraScanner()" class="w-full text-left px-4 py-3 bg-spu-50/50 border border-spu-200/80 rounded-xl font-semibold text-spu-900 flex items-center justify-between hover:bg-spu-100/60 transition-colors">
+                            <span class="flex items-center gap-2">
+                                <i class="fa-solid fa-camera text-spu-600"></i> Toggle Webcam / Barcode Scanner Option
+                            </span>
+                            <i id="cameraToggleIcon" class="fa-solid fa-chevron-down text-spu-600"></i>
+                        </button>
+                        <div id="cameraScannerWrapper" class="hidden mt-4 p-4 bg-spu-dark rounded-xl space-y-3 border border-spu-800">
+                            <div id="reader" class="w-full max-w-sm mx-auto overflow-hidden rounded-lg"></div>
+                            <p class="text-xs text-center text-spu-200/80">Point phone or web camera at Student Barcode / QR Code</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Terminal Display (Split Card Layout) -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    
+                    <!-- Left: Identified Student Profile Card -->
+                    <div class="bg-white rounded-2xl border border-spu-100 p-6 shadow-sm flex flex-col justify-between min-h-[340px]">
+                        <div>
+                            <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-6">
+                                <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Card Terminal Output</span>
+                                <span id="identBadge" class="text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-full">WAITING FOR CARD</span>
+                            </div>
+
+                            <div class="text-center py-4 space-y-4">
+                                <div class="relative inline-block">
+                                    <img id="studentPhoto" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80" alt="Student Profile" class="w-28 h-28 rounded-full object-cover mx-auto border-4 border-spu-100 shadow-md">
+                                    <div id="scanStatusIndicator" class="absolute bottom-0 right-0 bg-slate-400 text-white w-8 h-8 rounded-full flex items-center justify-center border-2 border-white shadow-sm text-sm">
+                                        <i class="fa-solid fa-clock"></i>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <h3 id="studentNameDisplay" class="text-2xl font-extrabold text-slate-800">Waiting for Student...</h3>
+                                    <p id="studentCourseDisplay" class="text-spu-700 font-bold text-sm mt-1">Please scan your ID card at the terminal.</p>
+                                    <p id="studentUidDisplay" class="text-slate-400 text-xs font-mono mt-1">UID: -- -- -- --</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Scan Result Punch Box -->
+                        <div id="punchResultBox" class="mt-4 p-4 rounded-xl bg-spu-50/60 border border-spu-100 text-center transition-all">
+                            <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider block mb-1">Time Action Recorded</span>
+                            <div class="flex items-center justify-center space-x-3">
+                                <span id="punchTypeBadge" class="px-3 py-1 rounded-full text-xs font-extrabold bg-slate-200 text-slate-600">--</span>
+                                <span id="punchTimeDisplay" class="text-xl font-extrabold text-slate-700 font-mono">--:--:--</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Quick RFID Simulator & Manual Test -->
+                    <div class="bg-white rounded-2xl border border-spu-100 p-6 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-lg font-bold text-spu-900 mb-2 flex items-center gap-2">
+                                <i class="fa-solid fa-sim-card text-spu-600"></i> RFID / NFC Card Simulator
+                            </h3>
+                            <p class="text-xs text-slate-500 mb-4">Click any enrolled student below to simulate an immediate RFID NFC card tap without hardware.</p>
+
+                            <!-- Enrolled Quick Tap Buttons -->
+                            <div id="quickSimButtons" class="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-1">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- Manual RFID Input Fallback -->
+                        <div class="mt-6 pt-4 border-t border-slate-100">
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Or Manual RFID Code Entry</label>
+                            <form onsubmit="handleManualScan(event)" class="flex gap-2">
+                                <input type="text" id="manualCardInput" placeholder="Enter RFID Card UID (e.g. RFID001)" class="flex-1 px-4 py-2.5 rounded-xl border border-spu-200 text-sm focus:outline-none focus:ring-2 focus:ring-spu-500 font-mono">
+                                <button type="submit" class="px-5 py-2.5 bg-spu-700 hover:bg-spu-800 text-white font-bold text-sm rounded-xl transition-colors shadow">
+                                    Tap
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Session History Table -->
+                <div class="bg-white rounded-2xl border border-spu-100 p-6 shadow-sm space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <h3 class="text-lg font-bold text-spu-900 flex items-center gap-2">
+                            <i class="fa-solid fa-clock-rotate-left text-spu-600"></i> Today's Live Session Scans
+                        </h3>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="exportToExcel()" class="px-4 py-2 bg-spu-700 hover:bg-spu-800 text-white rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 shadow-sm">
+                                <i class="fa-solid fa-file-excel"></i> Save Logs (Excel)
+                            </button>
+                            <button onclick="clearTodayLogs()" class="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl text-xs font-bold transition-colors border border-rose-200">
+                                <i class="fa-solid fa-trash-can"></i> Clear
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto custom-scrollbar">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-spu-50 text-spu-900 text-xs uppercase tracking-wider border-y border-spu-200/60">
+                                <tr>
+                                    <th class="py-3 px-4">Student Name</th>
+                                    <th class="py-3 px-4">Course / Year</th>
+                                    <th class="py-3 px-4">Card UID</th>
+                                    <th class="py-3 px-4">Type</th>
+                                    <th class="py-3 px-4">Time</th>
+                                    <th class="py-3 px-4">Punctuality</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sessionLogsTable" class="divide-y divide-slate-100 font-medium">
+                                <tr>
+                                    <td colspan="6" class="text-center py-6 text-slate-400 italic">No attendance scans recorded in this session yet.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </section>
+
+
+            <!-- 3. ATTENDANCE LOG BOOK TAB -->
+            <section id="tab-logs" class="tab-content space-y-6 hidden">
+                <div class="bg-white rounded-2xl border border-spu-100 p-6 shadow-sm space-y-4">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <h3 class="text-lg font-bold text-spu-900">Master Attendance Log Book</h3>
+                            <p class="text-xs text-slate-500">View and export all complete historical time logs.</p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-3">
+                            <input type="text" id="logSearchInput" oninput="filterLogs()" placeholder="Search student or course..." class="px-4 py-2 bg-spu-50/50 border border-spu-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-spu-500 w-48 sm:w-64">
+                            <button onclick="exportToExcel()" class="px-4 py-2 bg-spu-700 hover:bg-spu-800 text-white rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 shadow-sm">
+                                <i class="fa-solid fa-file-excel"></i> Export Excel
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto custom-scrollbar">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-spu-50 text-spu-900 text-xs uppercase tracking-wider border-y border-spu-200/60">
+                                <tr>
+                                    <th class="py-3 px-4">Date</th>
+                                    <th class="py-3 px-4">Student ID</th>
+                                    <th class="py-3 px-4">Student Name</th>
+                                    <th class="py-3 px-4">Course</th>
+                                    <th class="py-3 px-4">Time In</th>
+                                    <th class="py-3 px-4">Time Out</th>
+                                    <th class="py-3 px-4">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="masterLogsTable" class="divide-y divide-slate-100 font-medium">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- 4. STUDENT PERFORMANCE TAB -->
+            <section id="tab-performance" class="tab-content space-y-6 hidden">
+                <div class="bg-white rounded-2xl border border-spu-100 p-6 shadow-sm space-y-6">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-bold text-spu-900">Student Attendance Analytics</h3>
+                        <span class="text-xs text-slate-500">Summary Statistics</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="p-4 bg-spu-50 border border-spu-200/80 rounded-xl text-spu-900">
+                            <p class="text-xs font-bold uppercase tracking-wider">On-Time Attendance Rate</p>
+                            <h4 id="perfOnTimeRate" class="text-3xl font-extrabold mt-1">100%</h4>
+                        </div>
+                        <div class="p-4 bg-amber-50 border border-amber-200/80 rounded-xl text-amber-900">
+                            <p class="text-xs font-bold uppercase tracking-wider">Total Late Scans</p>
+                            <h4 id="perfLateCount" class="text-3xl font-extrabold mt-1">0</h4>
+                        </div>
+                        <div class="p-4 bg-emerald-50 border border-emerald-200/80 rounded-xl text-emerald-900">
+                            <p class="text-xs font-bold uppercase tracking-wider">Total Punch Activity</p>
+                            <h4 id="perfTotalPunches" class="text-3xl font-extrabold mt-1">0</h4>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-slate-100 pt-6">
+                        <h4 class="font-bold text-slate-800 mb-4">Punctuality Breakdown</h4>
+                        <div class="h-72">
+                            <canvas id="performanceChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- 5. STUDENT REGISTRATION TAB -->
+            <section id="tab-registration" class="tab-content space-y-6 hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    
+                    <!-- Registration Form -->
+                    <div class="bg-white rounded-2xl border border-spu-100 p-6 shadow-sm lg:col-span-1 space-y-4">
+                        <h3 class="text-lg font-bold text-spu-900 flex items-center gap-2">
+                            <i class="fa-solid fa-id-badge text-spu-600"></i> Enroll New Student ID
+                        </h3>
+                        
+                        <form onsubmit="handleStudentRegistration(event)" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Student Full Name</label>
+                                <input type="text" id="regName" required placeholder="e.g. DELA CRUZ, JUAN A." class="w-full px-4 py-2.5 rounded-xl border border-spu-200 text-sm focus:outline-none focus:ring-2 focus:ring-spu-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Student ID Number</label>
+                                <input type="text" id="regIdNum" required placeholder="e.g. 2026-0167" class="w-full px-4 py-2.5 rounded-xl border border-spu-200 text-sm focus:outline-none focus:ring-2 focus:ring-spu-500 font-mono">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Course & Year Level</label>
+                                <input type="text" id="regCourse" required placeholder="e.g. BSCpE - 4" class="w-full px-4 py-2.5 rounded-xl border border-spu-200 text-sm focus:outline-none focus:ring-2 focus:ring-spu-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Assigned RFID / NFC Tag UID</label>
+                                <div class="flex gap-2">
+                                    <input type="text" id="regRfid" required placeholder="e.g. RFID001" class="flex-1 px-4 py-2.5 rounded-xl border border-spu-200 text-sm focus:outline-none focus:ring-2 focus:ring-spu-500 font-mono">
+                                    <button type="button" onclick="autoGenRfid()" class="px-3 py-2 bg-spu-100 hover:bg-spu-200 text-spu-800 text-xs font-bold rounded-xl transition-colors">
+                                        Gen
+                                    </button>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Profile Photo URL (Optional)</label>
+                                <input type="url" id="regPhoto" placeholder="https://..." class="w-full px-4 py-2.5 rounded-xl border border-spu-200 text-sm focus:outline-none focus:ring-2 focus:ring-spu-500">
+                            </div>
+
+                            <button type="submit" class="w-full py-3 bg-spu-700 hover:bg-spu-800 text-white font-bold text-sm rounded-xl transition-colors shadow flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-plus-circle"></i> Register Student
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Enrolled Students Table -->
+                    <div class="bg-white rounded-2xl border border-spu-100 p-6 shadow-sm lg:col-span-2 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-bold text-spu-900">Enrolled Student Registry</h3>
+                            <span id="registeredCountBadge" class="text-xs bg-spu-100 text-spu-800 font-bold px-3 py-1 rounded-full border border-spu-200">0 Students</span>
+                        </div>
+
+                        <div class="overflow-x-auto custom-scrollbar">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-spu-50 text-spu-900 text-xs uppercase tracking-wider border-y border-spu-200/60">
+                                    <tr>
+                                        <th class="py-3 px-4">Student</th>
+                                        <th class="py-3 px-4">ID Number</th>
+                                        <th class="py-3 px-4">Course</th>
+                                        <th class="py-3 px-4">RFID UID</th>
+                                        <th class="py-3 px-4 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="enrolledStudentsTable" class="divide-y divide-slate-100 font-medium">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+
+            <!-- 6. USER MANAGEMENT TAB -->
+            <section id="tab-users" class="tab-content space-y-6 hidden">
+                <div class="bg-white rounded-2xl border border-spu-100 p-6 shadow-sm space-y-6">
+                    <div class="border-b border-slate-100 pb-4">
+                        <h3 class="text-lg font-bold text-spu-900">System Preferences & User Management</h3>
+                        <p class="text-xs text-slate-500">Configure attendance threshold times and administrator accounts.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Shift Timing Settings -->
+                        <div class="space-y-4">
+                            <h4 class="font-bold text-spu-800 text-sm uppercase tracking-wider">Attendance Rules</h4>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">Expected Standard Time In</label>
+                                <input type="time" id="settingExpectedTime" value="08:00" class="w-full px-4 py-2.5 rounded-xl border border-spu-200 text-sm focus:outline-none focus:ring-2 focus:ring-spu-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">Grace Period (Minutes)</label>
+                                <input type="number" id="settingGracePeriod" value="15" min="0" max="60" class="w-full px-4 py-2.5 rounded-xl border border-spu-200 text-sm focus:outline-none focus:ring-2 focus:ring-spu-500">
+                            </div>
+                            <button onclick="saveSettings()" class="px-5 py-2.5 bg-spu-700 hover:bg-spu-800 text-white font-bold text-sm rounded-xl transition-colors shadow">
+                                Save Settings
+                            </button>
+                        </div>
+
+                        <!-- Active Admin Profile -->
+                        <div class="bg-spu-50/40 p-6 rounded-2xl border border-spu-200/60 space-y-3">
+                            <h4 class="font-bold text-spu-800 text-sm uppercase tracking-wider">Current Admin Profile</h4>
+                            <div class="flex items-center space-x-4">
+                                <div class="w-12 h-12 bg-spu-800 text-spu-gold rounded-xl flex items-center justify-center font-bold text-xl shadow">
+                                    P
+                                </div>
+                                <div>
+                                    <h5 class="font-bold text-spu-900">admin</h5>
+                                    <p class="text-xs text-slate-500">System Admin</p>
+                                    <span class="inline-block bg-spu-100 text-spu-800 font-bold text-[10px] px-2 py-0.5 rounded mt-1 border border-spu-200">ACTIVE SESSION</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- Application Script Engine -->
+    <script>
+        // Default System Database Pre-population
+        const defaultStudents = [
+            {
+                id: "2026-0167",
+                name: "DELA CRUZ, JUAN A.",
+                course: "BSCpE - 4",
+                rfid: "RFID002",
+                photo: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=200&auto=format&fit=crop&q=80"
+            },
+        ];
+
+        // Global State variables
+        let students = JSON.parse(localStorage.getItem('practicum_students')) || defaultStudents;
+        let logs = JSON.parse(localStorage.getItem('practicum_logs')) || [];
+        let sessionLogs = [];
+        let html5QrcodeScanner = null;
+        let isNFCScanning = false;
+        let settings = JSON.parse(localStorage.getItem('practicum_settings')) || {
+            expectedTime: "08:00",
+            gracePeriod: 15
+        };
+
+        let dashboardChartInstance = null;
+        let performanceChartInstance = null;
+
+        // Buffer for hardware barcode/RFID keypress listener
+        let barcodeBuffer = '';
+        let lastKeyTime = Date.now();
+
+        // Audio Feedback Synthesizer using Web Audio API
+        function playTone(freq, duration, type = 'sine') {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + (duration / 1000));
+            } catch (e) {
+                console.log("Audio play error", e);
+            }
+        }
+
+        function playSuccessAudio() {
+            playTone(523.25, 100); // C5
+            setTimeout(() => playTone(659.25, 150), 100); // E5
+        }
+
+        function playWarningAudio() {
+            playTone(440, 150); // A4
+            setTimeout(() => playTone(349.23, 200), 150); // F4
+        }
+
+        function playErrorAudio() {
+            playTone(220, 300, 'square');
+        }
+
+        // Initialize App
+        document.addEventListener('DOMContentLoaded', () => {
+            saveState();
+            initClock();
+            renderStudents();
+            renderSessionLogs();
+            renderMasterLogs();
+            updateStats();
+            initCharts();
+            setupHardwareKeyboardListener();
+            setupMobileMenu();
+        });
+
+        // Live Clock Engine
+        function initClock() {
+            function update() {
+                const now = new Date();
+                const timeStr = now.toLocaleTimeString('en-US', { hour12: true });
+                const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                
+                document.getElementById('liveClock').textContent = timeStr;
+                document.getElementById('liveDate').textContent = dateStr;
+            }
+            update();
+            setInterval(update, 1000);
+        }
+
+        // Mobile Menu Drawer Handler
+        function setupMobileMenu() {
+            const btn = document.getElementById('mobileMenuBtn');
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+
+            function toggle() {
+                sidebar.classList.toggle('-translate-x-full');
+                overlay.classList.toggle('hidden');
+            }
+
+            btn.addEventListener('click', toggle);
+            overlay.addEventListener('click', toggle);
+        }
+
+        // Tab Navigation Engine
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-spu-600', 'text-white', 'shadow-lg', 'shadow-spu-900/40');
+                btn.classList.add('hover:bg-spu-900', 'hover:text-white', 'text-spu-200/80');
+            });
+
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`nav-${tabId}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('hover:bg-spu-900', 'hover:text-white', 'text-spu-200/80');
+                activeBtn.classList.add('bg-spu-600', 'text-white', 'shadow-lg', 'shadow-spu-900/40');
+            }
+
+            // Page Titles update
+            const titles = {
+                dashboard: ['Dashboard Overview', 'Welcome to St. Paul University Practicum Portal.'],
+                scanner: ['Attendance Scanner Terminal', 'Scan RFID Card, NFC Phone, or QR/Barcode.'],
+                logs: ['Attendance Log Book', 'Historical records of all student punches.'],
+                performance: ['Student Performance Analytics', 'Real-time attendance & punctuality stats.'],
+                registration: ['Student Registration', 'Manage and register RFID student badges.'],
+                users: ['System Preferences', 'Configure application settings and user profiles.']
+            };
+
+            if (titles[tabId]) {
+                document.getElementById('pageTitle').textContent = titles[tabId][0];
+                document.getElementById('pageSubTitle').textContent = titles[tabId][1];
+            }
+
+            // Close mobile menu if open
+            document.getElementById('sidebar').classList.add('-translate-x-full');
+            document.getElementById('sidebarOverlay').classList.add('hidden');
+
+            // Refresh charts if entering chart tabs
+            if (tabId === 'dashboard' || tabId === 'performance') {
+                updateCharts();
+            }
+        }
+
+        // Save State to LocalStorage
+        function saveState() {
+            localStorage.setItem('practicum_students', JSON.stringify(students));
+            localStorage.setItem('practicum_logs', JSON.stringify(logs));
+            localStorage.setItem('practicum_settings', JSON.stringify(settings));
+        }
+
+        // Hardware USB RFID / Barcode Scanner Listener
+        function setupHardwareKeyboardListener() {
+            document.addEventListener('keydown', (e) => {
+                // Ignore keypresses inside form inputs
+                if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
+                    return;
+                }
+
+                const currentTime = Date.now();
+                if (currentTime - lastKeyTime > 100) {
+                    barcodeBuffer = '';
+                }
+                lastKeyTime = currentTime;
+
+                if (e.key === 'Enter') {
+                    if (barcodeBuffer.length > 2) {
+                        processCardScan(barcodeBuffer.trim());
+                        barcodeBuffer = '';
+                    }
+                } else if (e.key.length === 1) {
+                    barcodeBuffer += e.key;
+                }
+            });
+        }
+
+        // Web NFC Scan Feature for Mobile Devices
+        async function initNFCScan() {
+            const btn = document.getElementById('btnNFCScan');
+            if ('NDEFReader' in window) {
+                try {
+                    const ndef = new NDEFReader();
+                    await ndef.scan();
+                    btn.classList.remove('bg-spu-gold', 'text-white');
+                    btn.classList.add('bg-emerald-400', 'text-spu-dark');
+                    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>NFC Active: Hold Phone Near Card</span>`;
+                    
+                    ndef.addEventListener("reading", ({ message, serialNumber }) => {
+                        const uid = serialNumber || "NFC-" + Math.floor(1000 + Math.random() * 9000);
+                        processCardScan(uid);
+                    });
+                } catch (error) {
+                    alert("NFC Permission Error or NFC disabled: " + error);
+                }
+            } else {
+                // Mobile Web NFC fallback simulation if browser lacks Web NFC API support
+                const simulatedUid = prompt("Web NFC is not supported in this desktop/browser environment.\nSimulate Mobile NFC Tap by entering RFID Code:", "RFID001");
+                if (simulatedUid) {
+                    processCardScan(simulatedUid.trim());
+                }
+            }
+        }
+
+        // Camera QR/Barcode Scanner Toggle
+        function toggleCameraScanner() {
+            const wrapper = document.getElementById('cameraScannerWrapper');
+            const icon = document.getElementById('cameraToggleIcon');
+
+            if (wrapper.classList.contains('hidden')) {
+                wrapper.classList.remove('hidden');
+                icon.classList.replace('fa-chevron-down', 'fa-chevron-up');
+                
+                html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: { width: 220, height: 220 } });
+                html5QrcodeScanner.render((decodedText) => {
+                    processCardScan(decodedText);
+                }, (error) => {});
+            } else {
+                wrapper.classList.add('hidden');
+                icon.classList.replace('fa-chevron-up', 'fa-chevron-down');
+                if (html5QrcodeScanner) {
+                    html5QrcodeScanner.clear();
+                }
+            }
+        }
+
+        // Core Attendance Processing Engine
+        function processCardScan(rfidCode) {
+            const student = students.find(s => s.rfid.toUpperCase() === rfidCode.toUpperCase() || s.id.toUpperCase() === rfidCode.toUpperCase());
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('en-US', { hour12: true });
+            const dateStr = now.toISOString().split('T')[0];
+
+            if (!student) {
+                playErrorAudio();
+                updateTerminalDisplay(null, 'UNKNOWN ID CARD', '--:--:--', false);
+                showStatusBanner('Card Not Registered', `RFID UID '${rfidCode}' is not enrolled in system.`, 'bg-rose-700');
+                return;
+            }
+
+            // Calculate Punctuality based on Expected Time & Grace Period
+            const [expHours, expMins] = settings.expectedTime.split(':').map(Number);
+            const expectedCutoff = new Date();
+            expectedCutoff.setHours(expHours, expMins + parseInt(settings.gracePeriod), 0, 0);
+
+            const isLate = now > expectedCutoff;
+            const punctualityStatus = isLate ? 'Late' : 'On Time';
+
+            // Check previous log today to toggle Time In / Time Out
+            const todayLogs = logs.filter(l => l.studentId === student.id && l.date === dateStr);
+            let scanType = 'TIME IN';
+            
+            if (todayLogs.length > 0 && todayLogs[todayLogs.length - 1].type === 'TIME IN') {
+                scanType = 'TIME OUT';
+            }
+
+            // Create Log Record
+            const newLog = {
+                id: Date.now(),
+                date: dateStr,
+                time: timeStr,
+                studentId: student.id,
+                studentName: student.name,
+                course: student.course,
+                rfid: student.rfid,
+                type: scanType,
+                status: punctualityStatus
+            };
+
+            // Store Log
+            logs.unshift(newLog);
+            sessionLogs.unshift(newLog);
+            saveState();
+
+            // Sound & Screen Updates
+            if (isLate) {
+                playWarningAudio();
+            } else {
+                playSuccessAudio();
+            }
+
+            updateTerminalDisplay(student, scanType, timeStr, true, punctualityStatus);
+            showStatusBanner(`SUCCESS: ${student.name}`, `${scanType} recorded at ${timeStr} (${punctualityStatus})`, isLate ? 'bg-amber-600' : 'bg-spu-700');
+
+            renderSessionLogs();
+            renderMasterLogs();
+            updateStats();
+        }
+
+        // Update Terminal Profile UI Card
+        function updateTerminalDisplay(student, type, time, success, punctuality = 'On Time') {
+            const photoEl = document.getElementById('studentPhoto');
+            const nameEl = document.getElementById('studentNameDisplay');
+            const courseEl = document.getElementById('studentCourseDisplay');
+            const uidEl = document.getElementById('studentUidDisplay');
+            const badgeEl = document.getElementById('identBadge');
+            const punchTypeBadge = document.getElementById('punchTypeBadge');
+            const punchTimeDisplay = document.getElementById('punchTimeDisplay');
+
+            if (success && student) {
+                photoEl.src = student.photo || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80';
+                nameEl.textContent = student.name;
+                courseEl.textContent = `${student.course} • ${student.id}`;
+                uidEl.textContent = `UID: ${student.rfid}`;
+                
+                badgeEl.textContent = 'STUDENT IDENTIFIED';
+                badgeEl.className = 'text-xs font-bold text-spu-800 bg-spu-100 px-3 py-1 rounded-full border border-spu-200';
+                
+                punchTypeBadge.textContent = type;
+                punchTypeBadge.className = type === 'TIME IN' 
+                    ? 'px-3 py-1 rounded-full text-xs font-extrabold bg-spu-100 text-spu-800'
+                    : 'px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-100 text-emerald-900';
+                
+                punchTimeDisplay.textContent = `${time} (${punctuality})`;
+            } else {
+                photoEl.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80';
+                nameEl.textContent = 'Unregistered ID Card';
+                courseEl.textContent = 'Card UID not found in database.';
+                uidEl.textContent = 'UID: Unknown';
+                
+                badgeEl.textContent = 'ACCESS DENIED';
+                badgeEl.className = 'text-xs font-bold text-rose-600 bg-rose-50 px-3 py-1 rounded-full border border-rose-200';
+                
+                punchTypeBadge.textContent = 'INVALID';
+                punchTypeBadge.className = 'px-3 py-1 rounded-full text-xs font-extrabold bg-rose-100 text-rose-800';
+                punchTimeDisplay.textContent = '--:--:--';
+            }
+        }
+
+        // Show Scanner Status Top Banner
+        function showStatusBanner(title, desc, bgClass) {
+            const banner = document.getElementById('scannerStatusBox');
+            const titleEl = document.getElementById('scannerStatusTitle');
+            const descEl = document.getElementById('scannerStatusDesc');
+
+            banner.className = `${bgClass} text-white rounded-xl p-4 flex items-center justify-between transition-all shadow-sm`;
+            titleEl.textContent = title;
+            descEl.textContent = desc;
+
+            setTimeout(() => {
+                banner.className = `bg-spu-700 text-white rounded-xl p-4 flex items-center justify-between transition-all shadow-sm`;
+                titleEl.textContent = 'Ready to Scan';
+                descEl.textContent = 'Listening for RFID / NFC ID card or Keyboard Scanner input...';
+            }, 4000);
+        }
+
+        // Handle Manual Input Scan Form
+        function handleManualScan(e) {
+            e.preventDefault();
+            const input = document.getElementById('manualCardInput');
+            if (input.value.trim()) {
+                processCardScan(input.value.trim());
+                input.value = '';
+            }
+        }
+
+        // Render Session Logs (Current Tab)
+        function renderSessionLogs() {
+            const table = document.getElementById('sessionLogsTable');
+            if (sessionLogs.length === 0) {
+                table.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-slate-400 italic">No attendance scans recorded in this session yet.</td></tr>`;
+                return;
+            }
+
+            table.innerHTML = sessionLogs.map(log => `
+                <tr class="hover:bg-spu-50/40 transition-colors">
+                    <td class="py-3 px-4 font-bold text-slate-800">${log.studentName}</td>
+                    <td class="py-3 px-4 text-slate-500">${log.course}</td>
+                    <td class="py-3 px-4 font-mono text-xs text-slate-600">${log.rfid}</td>
+                    <td class="py-3 px-4">
+                        <span class="px-2.5 py-1 rounded-lg text-[11px] font-bold ${log.type === 'TIME IN' ? 'bg-spu-100 text-spu-800 border border-spu-200' : 'bg-emerald-100 text-emerald-900 border border-emerald-200'}">
+                            ${log.type}
+                        </span>
+                    </td>
+                    <td class="py-3 px-4 font-mono text-slate-700">${log.time}</td>
+                    <td class="py-3 px-4">
+                        <span class="px-2.5 py-1 rounded-lg text-[11px] font-bold ${log.status === 'On Time' ? 'bg-spu-100 text-spu-900' : 'bg-amber-100 text-amber-800'}">
+                            ${log.status}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Render Master Logs Book
+        function renderMasterLogs(filterText = '') {
+            const table = document.getElementById('masterLogsTable');
+            const filtered = logs.filter(l => 
+                l.studentName.toLowerCase().includes(filterText.toLowerCase()) ||
+                l.course.toLowerCase().includes(filterText.toLowerCase()) ||
+                l.studentId.toLowerCase().includes(filterText.toLowerCase())
+            );
+
+            if (filtered.length === 0) {
+                table.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-slate-400 italic">No historical attendance records found.</td></tr>`;
+                return;
+            }
+
+            table.innerHTML = filtered.map(log => `
+                <tr class="hover:bg-spu-50/40 transition-colors">
+                    <td class="py-3 px-4 text-slate-600 font-mono text-xs">${log.date}</td>
+                    <td class="py-3 px-4 font-mono text-xs font-semibold text-spu-700">${log.studentId}</td>
+                    <td class="py-3 px-4 font-bold text-slate-800">${log.studentName}</td>
+                    <td class="py-3 px-4 text-slate-500">${log.course}</td>
+                    <td class="py-3 px-4 font-mono text-slate-700">${log.type === 'TIME IN' ? log.time : '--'}</td>
+                    <td class="py-3 px-4 font-mono text-slate-700">${log.type === 'TIME OUT' ? log.time : '--'}</td>
+                    <td class="py-3 px-4">
+                        <span class="px-2.5 py-1 rounded-lg text-[11px] font-bold ${log.status === 'On Time' ? 'bg-spu-100 text-spu-900' : 'bg-amber-100 text-amber-800'}">
+                            ${log.status}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function filterLogs() {
+            const text = document.getElementById('logSearchInput').value;
+            renderMasterLogs(text);
+        }
+
+        // Render Registered Students List & Quick Simulator Buttons
+        function renderStudents() {
+            const table = document.getElementById('enrolledStudentsTable');
+            const simContainer = document.getElementById('quickSimButtons');
+            const countBadge = document.getElementById('registeredCountBadge');
+
+            countBadge.textContent = `${students.length} Students`;
+
+            // Render Enrolled Table
+            if (students.length === 0) {
+                table.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-slate-400 italic">No registered students yet. Add one on the left.</td></tr>`;
+            } else {
+                table.innerHTML = students.map(s => `
+                    <tr class="hover:bg-spu-50/40 transition-colors">
+                        <td class="py-3 px-4 flex items-center space-x-3">
+                            <img src="${s.photo || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80'}" class="w-8 h-8 rounded-full object-cover border border-spu-200">
+                            <span class="font-bold text-slate-800">${s.name}</span>
+                        </td>
+                        <td class="py-3 px-4 font-mono text-xs text-slate-600">${s.id}</td>
+                        <td class="py-3 px-4 text-slate-500">${s.course}</td>
+                        <td class="py-3 px-4 font-mono text-xs text-spu-700 font-bold">${s.rfid}</td>
+                        <td class="py-3 px-4 text-right">
+                            <button onclick="deleteStudent('${s.id}')" class="text-slate-400 hover:text-rose-600 p-1 transition-colors" title="Delete Student">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+
+            // Render Quick Simulator Buttons
+            simContainer.innerHTML = students.map(s => `
+                <button onclick="processCardScan('${s.rfid}')" class="w-full p-3 rounded-xl border border-spu-100 hover:border-spu-500 hover:bg-spu-50 flex items-center justify-between transition-all group text-left">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 rounded-full bg-spu-100 group-hover:bg-spu-700 group-hover:text-white flex items-center justify-center font-bold text-xs text-spu-800 transition-colors">
+                            <i class="fa-solid fa-address-card"></i>
+                        </div>
+                        <div>
+                            <h5 class="font-bold text-xs text-slate-800 leading-tight">${s.name}</h5>
+                            <p class="text-[10px] text-slate-400">${s.course} • ${s.rfid}</p>
+                        </div>
+                    </div>
+                    <span class="text-xs font-bold text-spu-700 bg-spu-100 group-hover:bg-spu-700 group-hover:text-white px-2.5 py-1 rounded-lg transition-colors">
+                        Tap Card
+                    </span>
+                </button>
+            `).join('');
+        }
+
+        // Student Registration Form Submit
+        function handleStudentRegistration(e) {
+            e.preventDefault();
+            const name = document.getElementById('regName').value.trim();
+            const id = document.getElementById('regIdNum').value.trim();
+            const course = document.getElementById('regCourse').value.trim();
+            const rfid = document.getElementById('regRfid').value.trim();
+            const photo = document.getElementById('regPhoto').value.trim();
+
+            if (students.some(s => s.id === id || s.rfid === rfid)) {
+                alert('A student with this ID or RFID Tag UID already exists.');
+                return;
+            }
+
+            students.push({ id, name, course, rfid, photo });
+            saveState();
+            renderStudents();
+            updateStats();
+
+            // Clear form
+            e.target.reset();
+            alert(`Student ${name} registered successfully!`);
+        }
+
+        function autoGenRfid() {
+            document.getElementById('regRfid').value = 'RFID' + Math.floor(100 + Math.random() * 900);
+        }
+
+        function deleteStudent(id) {
+            if (confirm('Are you sure you want to remove this student?')) {
+                students = students.filter(s => s.id !== id);
+                saveState();
+                renderStudents();
+                updateStats();
+            }
+        }
+
+        // Update Dashboard Stats & Counter UI
+        function updateStats() {
+            document.getElementById('statTotalStudents').textContent = students.length;
+            
+            const todayStr = new Date().toISOString().split('T')[0];
+            const todayCount = logs.filter(l => l.date === todayStr).length;
+            document.getElementById('statScannedToday').textContent = todayCount;
+
+            // Performance Analytics
+            const totalPunches = logs.length;
+            const latePunches = logs.filter(l => l.status === 'Late').length;
+            const onTimeRate = totalPunches > 0 ? Math.round(((totalPunches - latePunches) / totalPunches) * 100) : 100;
+
+            document.getElementById('perfTotalPunches').textContent = totalPunches;
+            document.getElementById('perfLateCount').textContent = latePunches;
+            document.getElementById('perfOnTimeRate').textContent = `${onTimeRate}%`;
+        }
+
+        // Analytics Charts using Chart.js
+        function initCharts() {
+            const ctx1 = document.getElementById('dashboardChart').getContext('2d');
+            dashboardChartInstance = new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+                    datasets: [{
+                        label: 'Total Scans',
+                        data: [12, 19, sessionLogs.length || 14, 5, 2],
+                        backgroundColor: '#047857',
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            const ctx2 = document.getElementById('performanceChart').getContext('2d');
+            performanceChartInstance = new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: ['On Time', 'Late'],
+                    datasets: [{
+                        data: [85, 15],
+                        backgroundColor: ['#059669', '#d97706']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+
+        function updateCharts() {
+            if (dashboardChartInstance && performanceChartInstance) {
+                const total = logs.length || 1;
+                const lates = logs.filter(l => l.status === 'Late').length;
+                const onTime = total - lates;
+
+                performanceChartInstance.data.datasets[0].data = [onTime, lates];
+                performanceChartInstance.update();
+
+                dashboardChartInstance.data.datasets[0].data[2] = logs.length;
+                dashboardChartInstance.update();
+            }
+        }
+
+        // Save Settings Form
+        function saveSettings() {
+            settings.expectedTime = document.getElementById('settingExpectedTime').value;
+            settings.gracePeriod = document.getElementById('settingGracePeriod').value;
+            saveState();
+            alert('Settings saved successfully!');
+        }
+
+        function clearTodayLogs() {
+            if (confirm('Clear session scan view? (Saved logs will remain in Master Log Book)')) {
+                sessionLogs = [];
+                renderSessionLogs();
+            }
+        }
+
+        function resetSystemData() {
+            if (confirm('Reset all system data to default initial state?')) {
+                localStorage.clear();
+                students = defaultStudents;
+                logs = [];
+                sessionLogs = [];
+                saveState();
+                location.reload();
+            }
+        }
+
+        // Export Data to Multi-Sheet Excel File via SheetJS
+        function exportToExcel() {
+            const wb = XLSX.utils.book_new();
+
+            // Sheet 1: Master Attendance Logs
+            const logData = logs.map(l => ({
+                "Date": l.date,
+                "Student ID": l.studentId,
+                "Student Name": l.studentName,
+                "Course": l.course,
+                "Card RFID": l.rfid,
+                "Scan Type": l.type,
+                "Time": l.time,
+                "Punctuality": l.status
+            }));
+            const wsLogs = XLSX.utils.json_to_sheet(logData.length > 0 ? logData : [{"Status": "No Logs Recorded"}]);
+            XLSX.utils.book_append_sheet(wb, wsLogs, "Attendance Logs");
+
+            // Sheet 2: Student Directory
+            const studentData = students.map(s => ({
+                "Student ID": s.id,
+                "Full Name": s.name,
+                "Course & Year": s.course,
+                "RFID Tag UID": s.rfid
+            }));
+            const wsStudents = XLSX.utils.json_to_sheet(studentData);
+            XLSX.utils.book_append_sheet(wb, wsStudents, "Registered Students");
+
+            // Save File
+            XLSX.writeFile(wb, `Practicum_SmartID_Attendance_${new Date().toISOString().split('T')[0]}.xlsx`);
+        }
+    </script>
+</body>
+</html>
